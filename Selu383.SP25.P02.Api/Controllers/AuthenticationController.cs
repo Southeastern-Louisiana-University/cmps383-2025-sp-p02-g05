@@ -3,55 +3,87 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using System.Security.Claims;
+using Selu383.SP25.P02.Api.DTOs;
 using System.Threading.Tasks;
 using Selu383.SP25.P02.Api.Models;
-using Selu383.SP25.P02.Api.DTOs;
 
-namespace Selu383.SP25.P02.Api.Controllers { }
-
-[Route("api/authentication")]
-[ApiController]
-public class AuthenticationController : ControllerBase
+namespace Selu383.SP25.P02.Api.Controllers
 {
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly SignInManager<ApplicationUser> _signInManager;
-
-    public AuthenticationController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager)
+    [Route("api/authentication")]
+    [ApiController]
+    public class AuthenticationController : ControllerBase
     {
-        _userManager = userManager;
-        _signInManager = signInManager;
-    }
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly RoleManager<Role> _roleManager;
 
-    [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
-    {
-        var user = await _userManager.FindByNameAsync(loginDto.UserName);
-        if (user == null)
-            return BadRequest("Invalid username or password.");
-
-        var result = await _signInManager.PasswordSignInAsync(user, loginDto.Password, true, false);
-        if (!result.Succeeded)
-            return BadRequest("Invalid username or password.");
-
-        var claims = new List<Claim>
+        public AuthenticationController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<Role> roleManager)
         {
-            new Claim(ClaimTypes.Name, user.UserName),
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
-        };
+            _userManager = userManager;
+            _signInManager = signInManager;
+            _roleManager = roleManager;
+        }
 
-        var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-        var authProperties = new AuthenticationProperties { IsPersistent = true };
+        /// <summary>
+        /// ✅ Get Current Logged-In User (Me)
+        /// </summary>
+        [HttpGet("me")] // 🔹 Follows "List" position (Getting user details)
+        [Authorize]
+        public async Task<IActionResult> GetCurrentUser()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return Unauthorized();
+            }
 
-        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), authProperties);
+            var roles = await _userManager.GetRolesAsync(user);
 
-        return Ok(new { Message = "Login successful." });
-    }
+            return Ok(new UserDto
+            {
+                Id = user.Id,
+                UserName = user.UserName,
+                Roles = (string[])roles
+            });
+        }
 
-    [HttpPost("logout")]
-    public async Task<IActionResult> Logout()
-    {
-        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-        return Ok(new { Message = "Logged out successfully." });
+        /// <summary>
+        /// ✅ Login (Creates a new authentication session)
+        /// </summary>
+        [HttpPost("login")] // 🔹 Follows "Create" position (Creating a session)
+        public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
+        {
+            var user = await _userManager.FindByNameAsync(loginDto.UserName);
+            if (user == null)
+            {
+                return BadRequest("Invalid username or password.");
+            }
+
+            var result = await _signInManager.PasswordSignInAsync(user, loginDto.Password, true, false);
+            if (!result.Succeeded)
+            {
+                return BadRequest("Invalid username or password.");
+            }
+
+            var roles = await _userManager.GetRolesAsync(user);
+
+            return Ok(new UserDto
+            {
+                Id = user.Id,
+                UserName = user.UserName,
+                Roles = (string[])roles
+            });
+        }
+
+        /// <summary>
+        /// ✅ Logout (Deletes authentication session)
+        /// </summary>
+        [HttpPost("logout")] // 🔹 Follows "Delete" position (Deleting session)
+        [Authorize]
+        public async Task<IActionResult> Logout()
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return Ok();
+        }
     }
 }
