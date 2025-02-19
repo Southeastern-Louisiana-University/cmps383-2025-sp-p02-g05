@@ -55,11 +55,11 @@ namespace Selu383.SP25.P02.Api
                 var db = scope.ServiceProvider.GetRequiredService<DataContext>();
                 await db.Database.MigrateAsync();
 
-                //SeedTheaters.Initialize(scope.ServiceProvider);
+                SeedTheaters.Initialize(scope.ServiceProvider);
 
                 var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
                 var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<Role>>();
-                await DataContext.SeedData(userManager, roleManager); 
+                await SeedUsers.Initialize(userManager, roleManager); 
 
             }
 
