@@ -1,5 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Selu383.SP25.P02.Api.Features.Theaters;
+using Selu383.SP25.P02.Api.Features.Users;
+
 
 namespace Selu383.SP25.P02.Api.Data
 {
@@ -14,12 +17,24 @@ namespace Selu383.SP25.P02.Api.Data
                 {
                     return;   // DB has been seeded
                 }
+                var bobId = context.Users
+                    .Where(u => u.UserName == "bob")
+                    .Select(u => u.Id)
+                    .FirstOrDefault();
+
+                if (bobId == 0)
+                {
+                    throw new Exception("User missing");
+                }
+
+
                 context.Theaters.AddRange(
                     new Theater
                     {
                         Name = "AMC Palace 10",
                         Address = "123 Main St, Springfield",
-                        SeatCount = 150
+                        SeatCount = 150,
+                        ManagerId = bobId
                     },
                     new Theater
                     {
@@ -30,6 +45,7 @@ namespace Selu383.SP25.P02.Api.Data
                     new Theater
                     {
                         Name = "Grand Theater",
+
                         Address = "789 Broadway Ave, Metropolis",
                         SeatCount = 300
                     },
