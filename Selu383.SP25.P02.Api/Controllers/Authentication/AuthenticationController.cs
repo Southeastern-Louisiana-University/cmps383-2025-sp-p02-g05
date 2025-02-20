@@ -26,6 +26,30 @@ namespace Selu383.SP25.P02.Api.Controllers
         }
 
 
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
+        {
+            if (loginDto == null)
+                return BadRequest("Invalid login details");
+
+            var user = await _userManager.FindByNameAsync(loginDto.Username);
+            if (user == null)
+                return BadRequest("Invalid username or password");
+
+            var result = await _signInManager.PasswordSignInAsync(user, loginDto.Password, false, false);
+            if (!result.Succeeded)
+                return BadRequest("Invalid username or password");
+
+            var roles = await _userManager.GetRolesAsync(user);
+
+            return Ok(new
+            {
+                Id = user.Id,
+                Username = user.UserName,
+                Roles = roles
+            });
+        }
+
         [HttpGet("me")]
         [Authorize]
         public async Task<IActionResult> GetCurrentUser()
@@ -45,62 +69,6 @@ namespace Selu383.SP25.P02.Api.Controllers
                 Roles = roles.ToList()
             });
         }
-
-
-        [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
-        {
-            try
-            {
-                if (loginDto == null || string.IsNullOrEmpty(loginDto.Username) || string.IsNullOrEmpty(loginDto.Password))
-                {
-                    return BadRequest("Username and password are required.");
-                }
-
-                var user = await _userManager.FindByNameAsync(loginDto.Username);
-                if (user == null)
-                {
-                    return BadRequest("Invalid username or password.");
-                }
-
-                var isPasswordValid = await _userManager.CheckPasswordAsync(user, loginDto.Password);
-                if (!isPasswordValid)
-                {
-                    return BadRequest("Invalid username or password.");
-                }
-
-                var roles = await _userManager.GetRolesAsync(user);
-
-                var claims = new List<Claim>
-        {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Name, user.UserName)
-        };
-
-                foreach (var role in roles)
-                {
-                    claims.Add(new Claim(ClaimTypes.Role, role));
-                }
-
-                var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-                var principal = new ClaimsPrincipal(identity);
-
-                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
-
-                return Ok(new UserDto
-                {
-                    Id = user.Id,
-                    Username = user.UserName,
-                    Roles = roles.ToList()
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal Server Error: {ex.Message}");
-            }
-        }
-
-
 
 
         [HttpPost("logout")]

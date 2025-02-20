@@ -25,7 +25,7 @@ namespace Selu383.SP25.P02.Api.Controllers
         {
             
             if (createUserDto == null || string.IsNullOrEmpty(createUserDto.Username) ||
-                string.IsNullOrEmpty(createUserDto.Password) || createUserDto.Roles == null || !createUserDto.Roles.Any())
+                string.IsNullOrEmpty(value: createUserDto.Password) || createUserDto.Roles == null || !createUserDto.Roles.Any())
             {
                 return BadRequest("All fields are required, and at least one role must be provided.");
             }
