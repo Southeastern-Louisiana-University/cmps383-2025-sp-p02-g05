@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Selu383.SP25.P02.Api.Data;
 using Selu383.SP25.P02.Api.Features.Theaters;
 
-namespace Selu383.SP25.P02.Api.Controllers
+namespace Selu383.SP25.P02.Api.Controllers.Theater
 {
     [Route("api/theaters")]
     [ApiController]
