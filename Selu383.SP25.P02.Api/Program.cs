@@ -36,6 +36,11 @@ namespace Selu383.SP25.P02.Api
                     context.Response.StatusCode = 401;
                     return Task.CompletedTask;
                 };
+                options.Events.OnRedirectToAccessDenied = context =>
+                {
+                    context.Response.StatusCode = 403;
+                    return Task.CompletedTask;
+                };
             });
 
             // ? Add Authentication & Authorization Middleware

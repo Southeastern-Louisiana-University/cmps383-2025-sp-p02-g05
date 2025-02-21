@@ -75,8 +75,10 @@ namespace Selu383.SP25.P02.Api.Controllers
         [Authorize]
         public async Task<IActionResult> Logout()
         {
-            await _signInManager.SignOutAsync();
+            await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
             return Ok();
+
+           
         }
     }
 }
