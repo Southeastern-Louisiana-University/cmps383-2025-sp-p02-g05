@@ -1,4 +1,5 @@
 
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Selu383.SP25.P02.Api.Data;
 
@@ -14,11 +15,28 @@ namespace Selu383.SP25.P02.Api
             builder.Services.AddDbContext<DataContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DataContext") ?? throw new InvalidOperationException("Connection string 'DataContext' not found.")));
 
+            //Adding ASP.NET Core Identity w/Cookie Authentication
+            builder.Services.AddIdentity<IdentityUser, IdentityRole>()
+                .AddEntityFrameworkStores<DataContext>()
+                .AddDefaultTokenProviders();
+
+            //Adding Authentication
+            builder.Services.ConfigureApplicationCookie(options =>
+            {
+                options.Cookie.HttpOnly = true;
+                options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+                options.LoginPath = "/api/authentication/login"; //login path for API
+                options.AccessDeniedPath = "/api/authentication/accessdenied";
+                options.SlidingExpiration = true;
+            });
+
+            //Controllers and OpenAPI support...Handles incoming HTTP requests
             builder.Services.AddControllers();
-            // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-            builder.Services.AddOpenApi();
 
             var app = builder.Build();
+
+            // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+            builder.Services.AddOpenApi();
 
             using (var scope = app.Services.CreateScope())
             {
@@ -35,6 +53,8 @@ namespace Selu383.SP25.P02.Api
 
             app.UseHttpsRedirection();
 
+            app.UseAuthentication();
+            
             app.UseAuthorization();
 
 
