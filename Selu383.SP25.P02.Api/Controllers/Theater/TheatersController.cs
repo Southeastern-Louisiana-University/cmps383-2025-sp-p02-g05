@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Selu383.SP25.P02.Api.Data;
 using Selu383.SP25.P02.Api.Features.Theaters;
+using System.Security.Claims;
 
 namespace Selu383.SP25.P02.Api.Controllers
 {
@@ -18,14 +20,16 @@ namespace Selu383.SP25.P02.Api.Controllers
             theaters = dataContext.Set<Theater>();
         }
 
+        // ✅ Ensure only logged-in users can get theaters
         [HttpGet]
+        [Authorize]
         public IQueryable<TheaterDto> GetAllTheaters()
         {
             return GetTheaterDtos(theaters);
         }
 
-        [HttpGet]
-        [Route("{id}")]
+        [HttpGet("{id}")]
+        [Authorize]
         public ActionResult<TheaterDto> GetTheaterById(int id)
         {
             var result = GetTheaterDtos(theaters.Where(x => x.Id == id)).FirstOrDefault();
@@ -37,7 +41,9 @@ namespace Selu383.SP25.P02.Api.Controllers
             return Ok(result);
         }
 
+        // ✅ Ensure only Admins can create theaters
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public ActionResult<TheaterDto> CreateTheater(TheaterDto dto)
         {
             if (IsInvalid(dto))
@@ -60,8 +66,9 @@ namespace Selu383.SP25.P02.Api.Controllers
             return CreatedAtAction(nameof(GetTheaterById), new { id = dto.Id }, dto);
         }
 
-        [HttpPut]
-        [Route("{id}")]
+        
+        [HttpPut("{id}")]
+        [Authorize]
         public ActionResult<TheaterDto> UpdateTheater(int id, TheaterDto dto)
         {
             if (IsInvalid(dto))
@@ -75,6 +82,13 @@ namespace Selu383.SP25.P02.Api.Controllers
                 return NotFound();
             }
 
+            
+            var userRole = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+            if (userRole != "Admin")
+            {
+                return Forbid();
+            }
+
             theater.Name = dto.Name;
             theater.Address = dto.Address;
             theater.SeatCount = dto.SeatCount;
@@ -86,8 +100,9 @@ namespace Selu383.SP25.P02.Api.Controllers
             return Ok(dto);
         }
 
-        [HttpDelete]
-        [Route("{id}")]
+        
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public ActionResult DeleteTheater(int id)
         {
             var theater = theaters.FirstOrDefault(x => x.Id == id);
@@ -97,7 +112,6 @@ namespace Selu383.SP25.P02.Api.Controllers
             }
 
             theaters.Remove(theater);
-
             dataContext.SaveChanges();
 
             return Ok();

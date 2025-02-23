@@ -8,7 +8,7 @@ namespace Selu383.SP25.P02.Api.Controllers
 {
     [Route("api/users")]
     [ApiController]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin")] 
     public class UsersController : ControllerBase
     {
         private readonly UserManager<User> _userManager;
@@ -21,16 +21,15 @@ namespace Selu383.SP25.P02.Api.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateUser([FromBody] UserDto createUserDto)
+        public async Task<IActionResult> CreateUser([FromBody] CreateUserDto createUserDto)
         {
-            
             if (createUserDto == null || string.IsNullOrEmpty(createUserDto.Username) ||
-                string.IsNullOrEmpty(value: createUserDto.Password) || createUserDto.Roles == null || !createUserDto.Roles.Any())
+                string.IsNullOrEmpty(createUserDto.Password) || createUserDto.Roles == null || !createUserDto.Roles.Any())
             {
                 return BadRequest("All fields are required, and at least one role must be provided.");
             }
 
-           
+            
             var existingUser = await _userManager.FindByNameAsync(createUserDto.Username);
             if (existingUser != null)
             {
@@ -38,19 +37,23 @@ namespace Selu383.SP25.P02.Api.Controllers
             }
 
             
+            var invalidRoles = new List<string>();
             foreach (var role in createUserDto.Roles)
             {
                 if (!await _roleManager.RoleExistsAsync(role))
                 {
-                    return BadRequest($"Role '{role}' does not exist.");
+                    invalidRoles.Add(role);
                 }
             }
+            if (invalidRoles.Any())
+            {
+                return BadRequest($"These roles do not exist: {string.Join(", ", invalidRoles)}");
+            }
 
-           
+            
             var user = new User { UserName = createUserDto.Username };
             var result = await _userManager.CreateAsync(user, createUserDto.Password);
 
-            
             if (!result.Succeeded)
             {
                 return BadRequest(result.Errors.Select(e => e.Description));
@@ -64,7 +67,7 @@ namespace Selu383.SP25.P02.Api.Controllers
             {
                 Id = user.Id,
                 Username = user.UserName,
-                Roles = createUserDto.Roles
+                Roles = createUserDto.Roles.ToList()  
             });
         }
     }

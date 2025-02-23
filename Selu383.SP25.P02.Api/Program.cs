@@ -1,11 +1,8 @@
-
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Selu383.SP25.P02.Api.Data;
 using Selu383.SP25.P02.Api.Features.Roles;
 using Selu383.SP25.P02.Api.Features.Users;
-
 
 namespace Selu383.SP25.P02.Api
 {
@@ -15,74 +12,61 @@ namespace Selu383.SP25.P02.Api
         {
             var builder = WebApplication.CreateBuilder(args);
 
-
-            // Add services to the container.
+            
             builder.Services.AddDbContext<DataContext>(options =>
-                options.UseSqlServer(builder.Configuration.GetConnectionString("DataContext") ?? throw new InvalidOperationException("Connection string 'DataContext' not found.")));
+                options.UseSqlServer(builder.Configuration.GetConnectionString("DataContext") ??
+                    throw new InvalidOperationException("Connection string 'DataContext' not found.")));
 
-            builder.Services.AddIdentity<User, Role>()
-                .AddEntityFrameworkStores<DataContext>()
-                .AddDefaultTokenProviders();
+            
+            builder.Services.AddIdentity<User, Role>(options =>
+            {
+                options.User.RequireUniqueEmail = false;
+            })
+            .AddEntityFrameworkStores<DataContext>()
+            .AddDefaultTokenProviders();
 
-            // ? Configure Cookie Authentication
+            
             builder.Services.ConfigureApplicationCookie(options =>
             {
-                options.LoginPath = "/api/authentication/login";
-                options.AccessDeniedPath = "/api/authentication/accessdenied";
-                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-                options.SlidingExpiration = true;
                 options.Events.OnRedirectToLogin = context =>
                 {
                     context.Response.StatusCode = 401;
                     return Task.CompletedTask;
                 };
+
+                options.Events.OnRedirectToAccessDenied = context =>
+                {
+                    context.Response.StatusCode = 403;
+                    return Task.CompletedTask;
+                };
             });
 
-            // ? Add Authentication & Authorization Middleware
-            builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-                .AddCookie();
-
             builder.Services.AddAuthorization();
-
-
             builder.Services.AddControllers();
-            // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-            builder.Services.AddOpenApi();
 
             var app = builder.Build();
 
+            // ? Ensure Database Migration and Seeding
             using (var scope = app.Services.CreateScope())
             {
-                var db = scope.ServiceProvider.GetRequiredService<DataContext>();
-                await db.Database.MigrateAsync();
+                var services = scope.ServiceProvider;
+                var db = services.GetRequiredService<DataContext>();
 
-                SeedTheaters.Initialize(scope.ServiceProvider);
+                await db.Database.MigrateAsync();  
 
-                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
-                var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<Role>>();
-                await SeedUsers.Initialize(userManager, roleManager);
-
+                await SeedUsersAndRoles.EnsureSeededAsync(services);  
+                SeedTheaters.Initialize(scope.ServiceProvider); 
             }
 
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.MapOpenApi();
-            }
-
+            // ? Configure Middleware Order
             app.UseHttpsRedirection();
-
             app.UseAuthentication();
-
-            app
-                .UseRouting()
-                .UseAuthorization()
-                .UseEndpoints(x =>
-                {
-                    x.MapControllers();
-                });
-
-            app.MapControllers();
+            app.UseRouting();
+            app.UseAuthorization();
+            app.UseEndpoints(x =>
+            {
+                x.MapControllers();
+            });
 
             app.Run();
         }
