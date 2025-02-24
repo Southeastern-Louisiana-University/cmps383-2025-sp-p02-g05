@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Selu383.SP25.P02.Api.Data;
 using Selu383.SP25.P02.Api.Features.Roles;
 using Selu383.SP25.P02.Api.Features.Users;
+using Microsoft.OpenApi.Models;
+
 
 namespace Selu383.SP25.P02.Api
 {
@@ -44,6 +46,18 @@ namespace Selu383.SP25.P02.Api
             builder.Services.AddAuthorization();
             builder.Services.AddControllers();
 
+            builder.Services.AddSwaggerGen(options =>
+            {
+                options.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Title = "Theatre API",
+                    Version = "v1",
+                    Description = "API for managing theatres"
+                });
+            });
+
+
+
             var app = builder.Build();
 
             // ? Ensure Database Migration and Seeding
@@ -63,6 +77,16 @@ namespace Selu383.SP25.P02.Api
             app.UseAuthentication();
             app.UseRouting();
             app.UseAuthorization();
+
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseSwagger();
+                app.UseSwaggerUI(options =>
+                {
+                    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Theatre API v1");
+                });
+            }
+
             app.UseEndpoints(x =>
             {
                 x.MapControllers();
