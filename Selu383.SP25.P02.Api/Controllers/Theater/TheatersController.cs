@@ -31,7 +31,7 @@ namespace Selu383.SP25.P02.Api.Controllers
 
         [HttpGet]
         [Route("{id}")]
-        [Authorize]
+       // [Authorize]
         public ActionResult<TheaterDto> GetTheaterById(int id)
         {
             var result = GetTheaterDtos(theaters.Where(x => x.Id == id)).FirstOrDefault();
