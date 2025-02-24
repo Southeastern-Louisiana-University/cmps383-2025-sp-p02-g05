@@ -12,8 +12,8 @@ using Selu383.SP25.P02.Api.Data;
 namespace Selu383.SP25.P02.Api.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20250220200903_FixUserRoleMapping")]
-    partial class FixUserRoleMapping
+    [Migration("20250223235024_AddManagerIdToTheater")]
+    partial class AddManagerIdToTheater
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -155,6 +155,9 @@ namespace Selu383.SP25.P02.Api.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("ManagerId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(120)
@@ -164,6 +167,8 @@ namespace Selu383.SP25.P02.Api.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ManagerId");
 
                     b.ToTable("Theaters");
                 });
@@ -291,6 +296,15 @@ namespace Selu383.SP25.P02.Api.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Selu383.SP25.P02.Api.Features.Theaters.Theater", b =>
+                {
+                    b.HasOne("Selu383.SP25.P02.Api.Features.Users.User", "Manager")
+                        .WithMany()
+                        .HasForeignKey("ManagerId");
+
+                    b.Navigation("Manager");
                 });
 
             modelBuilder.Entity("Selu383.SP25.P02.Api.Features.Users.UserRole", b =>

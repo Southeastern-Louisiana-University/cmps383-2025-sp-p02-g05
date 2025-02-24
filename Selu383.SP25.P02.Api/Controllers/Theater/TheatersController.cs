@@ -1,9 +1,12 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Selu383.SP25.P02.Api.Data;
 using Selu383.SP25.P02.Api.Features.Theaters;
+using Selu383.SP25.P02.Api.Features.Users;
+using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace Selu383.SP25.P02.Api.Controllers
 {
@@ -20,15 +23,14 @@ namespace Selu383.SP25.P02.Api.Controllers
             theaters = dataContext.Set<Theater>();
         }
 
-        // ✅ Ensure only logged-in users can get theaters
         [HttpGet]
-        [Authorize]
         public IQueryable<TheaterDto> GetAllTheaters()
         {
             return GetTheaterDtos(theaters);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet]
+        [Route("{id}")]
         [Authorize]
         public ActionResult<TheaterDto> GetTheaterById(int id)
         {
@@ -37,11 +39,10 @@ namespace Selu383.SP25.P02.Api.Controllers
             {
                 return NotFound();
             }
-
             return Ok(result);
         }
 
-        // ✅ Ensure only Admins can create theaters
+        // ✅ Only Admins can create theaters
         [HttpPost]
         [Authorize(Roles = "Admin")]
         public ActionResult<TheaterDto> CreateTheater(TheaterDto dto)
@@ -51,14 +52,24 @@ namespace Selu383.SP25.P02.Api.Controllers
                 return BadRequest();
             }
 
+            // ✅ Ensure ManagerId is valid (can be null)
+            if (dto.ManagerId.HasValue)
+            {
+                var managerExists = dataContext.Users.Any(u => u.Id == dto.ManagerId);
+                if (!managerExists)
+                {
+                    return BadRequest("Invalid ManagerId. User does not exist.");
+                }
+            }
+
             var theater = new Theater
             {
                 Name = dto.Name,
                 Address = dto.Address,
                 SeatCount = dto.SeatCount,
+                ManagerId = dto.ManagerId
             };
             theaters.Add(theater);
-
             dataContext.SaveChanges();
 
             dto.Id = theater.Id;
@@ -66,8 +77,9 @@ namespace Selu383.SP25.P02.Api.Controllers
             return CreatedAtAction(nameof(GetTheaterById), new { id = dto.Id }, dto);
         }
 
-        
-        [HttpPut("{id}")]
+        // ✅ Allow both Admins & Managers to update theaters
+        [HttpPut]
+        [Route("{id}")]
         [Authorize]
         public ActionResult<TheaterDto> UpdateTheater(int id, TheaterDto dto)
         {
@@ -82,9 +94,19 @@ namespace Selu383.SP25.P02.Api.Controllers
                 return NotFound();
             }
 
-            
-            var userRole = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
-            if (userRole != "Admin")
+            // ✅ Get logged-in user ID
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdClaim))
+            {
+                return Unauthorized(); // User must be logged in
+            }
+
+            int userId = int.Parse(userIdClaim);
+            bool isAdmin = User.IsInRole("Admin");
+            bool isManager = theater.ManagerId.HasValue && theater.ManagerId == userId;
+
+            // ✅ Allow only Admins or the assigned Manager
+            if (!isAdmin && !isManager)
             {
                 return Forbid();
             }
@@ -92,6 +114,7 @@ namespace Selu383.SP25.P02.Api.Controllers
             theater.Name = dto.Name;
             theater.Address = dto.Address;
             theater.SeatCount = dto.SeatCount;
+            theater.ManagerId = dto.ManagerId;
 
             dataContext.SaveChanges();
 
@@ -100,8 +123,9 @@ namespace Selu383.SP25.P02.Api.Controllers
             return Ok(dto);
         }
 
-        
-        [HttpDelete("{id}")]
+        // ✅ Only Admins can delete theaters
+        [HttpDelete]
+        [Route("{id}")]
         [Authorize(Roles = "Admin")]
         public ActionResult DeleteTheater(int id)
         {
@@ -134,6 +158,7 @@ namespace Selu383.SP25.P02.Api.Controllers
                     Name = x.Name,
                     Address = x.Address,
                     SeatCount = x.SeatCount,
+                    ManagerId = x.ManagerId
                 });
         }
     }

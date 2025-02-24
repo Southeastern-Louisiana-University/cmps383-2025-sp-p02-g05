@@ -5,7 +5,7 @@
 namespace Selu383.SP25.P02.Api.Migrations
 {
     /// <inheritdoc />
-    public partial class FixUserRoleMapping : Migration
+    public partial class AddManagerIdToTheater : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -28,6 +28,12 @@ namespace Selu383.SP25.P02.Api.Migrations
             migrationBuilder.RenameTable(
                 name: "Role",
                 newName: "AspNetRoles");
+
+            migrationBuilder.AddColumn<int>(
+                name: "ManagerId",
+                table: "Theaters",
+                type: "int",
+                nullable: true);
 
             migrationBuilder.AlterColumn<string>(
                 name: "UserName",
@@ -206,6 +212,11 @@ namespace Selu383.SP25.P02.Api.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_Theaters_ManagerId",
+                table: "Theaters",
+                column: "ManagerId");
+
+            migrationBuilder.CreateIndex(
                 name: "EmailIndex",
                 table: "AspNetUsers",
                 column: "NormalizedEmail");
@@ -243,11 +254,22 @@ namespace Selu383.SP25.P02.Api.Migrations
                 name: "IX_AspNetUserRoles_RoleId",
                 table: "AspNetUserRoles",
                 column: "RoleId");
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_Theaters_AspNetUsers_ManagerId",
+                table: "Theaters",
+                column: "ManagerId",
+                principalTable: "AspNetUsers",
+                principalColumn: "Id");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropForeignKey(
+                name: "FK_Theaters_AspNetUsers_ManagerId",
+                table: "Theaters");
+
             migrationBuilder.DropTable(
                 name: "AspNetRoleClaims");
 
@@ -262,6 +284,10 @@ namespace Selu383.SP25.P02.Api.Migrations
 
             migrationBuilder.DropTable(
                 name: "AspNetUserTokens");
+
+            migrationBuilder.DropIndex(
+                name: "IX_Theaters_ManagerId",
+                table: "Theaters");
 
             migrationBuilder.DropPrimaryKey(
                 name: "PK_AspNetUsers",
@@ -282,6 +308,10 @@ namespace Selu383.SP25.P02.Api.Migrations
             migrationBuilder.DropIndex(
                 name: "RoleNameIndex",
                 table: "AspNetRoles");
+
+            migrationBuilder.DropColumn(
+                name: "ManagerId",
+                table: "Theaters");
 
             migrationBuilder.RenameTable(
                 name: "AspNetUsers",
