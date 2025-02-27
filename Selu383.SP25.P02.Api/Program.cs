@@ -1,4 +1,8 @@
+
 using Microsoft.AspNetCore.Identity;
+
+using Microsoft.AspNetCore.Builder;
+
 using Microsoft.EntityFrameworkCore;
 using Selu383.SP25.P02.Api.Data;
 using Selu383.SP25.P02.Api.Features.Roles;
@@ -94,6 +98,9 @@ namespace Selu383.SP25.P02.Api
             {
                 app.MapFallbackToFile("/index.html");
             }
+          
+            app.MapControllers();
+
 
             app.Run();
         }
