@@ -71,26 +71,29 @@ namespace Selu383.SP25.P02.Api
                 await SeedUsersAndRoles.EnsureSeededAsync(services);  
                 SeedTheaters.Initialize(scope.ServiceProvider); 
             }
-
-            // ? Configure Middleware Order
             app.UseHttpsRedirection();
             app.UseAuthentication();
             app.UseRouting();
             app.UseAuthorization();
 
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI(options =>
-                {
-                    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Theatre API v1");
-                });
-            }
-
             app.UseEndpoints(x =>
             {
                 x.MapControllers();
             });
+
+            app.UseStaticFiles();
+
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseSpa(x =>
+                {
+                    x.UseProxyToSpaDevelopmentServer("http://localhost:5173");
+                });
+            }
+            else
+            {
+                app.MapFallbackToFile("/index.html");
+            }
 
             app.Run();
         }
