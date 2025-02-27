@@ -1,6 +1,5 @@
 
 using Microsoft.AspNetCore.Identity;
-
 using Microsoft.AspNetCore.Builder;
 
 using Microsoft.EntityFrameworkCore;
@@ -96,10 +95,12 @@ namespace Selu383.SP25.P02.Api
             }
             else
             {
-                app.MapFallbackToFile("/index.html");
+
+              app.MapFallbackToFile("/index.html");
             }
           
             app.MapControllers();
+
 
 
             app.Run();
