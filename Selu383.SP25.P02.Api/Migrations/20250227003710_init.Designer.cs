@@ -12,8 +12,8 @@ using Selu383.SP25.P02.Api.Data;
 namespace Selu383.SP25.P02.Api.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20250223235024_AddManagerIdToTheater")]
-    partial class AddManagerIdToTheater
+    [Migration("20250227003710_init")]
+    partial class init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

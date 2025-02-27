@@ -5,7 +5,7 @@
 namespace Selu383.SP25.P02.Api.Migrations
 {
     /// <inheritdoc />
-    public partial class AddManagerIdToTheater : Migration
+    public partial class init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
